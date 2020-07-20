@@ -61,13 +61,13 @@ void DSPLLE::DoState(PointerWrap& p)
   p.Do(g_dsp.err_pc);
 #endif
   p.Do(g_dsp.cr);
-  p.Do(g_dsp.reg_stack_ptr);
+  p.Do(g_dsp.reg_stack_ptrs);
   p.Do(g_dsp.exceptions);
   p.Do(g_dsp.external_interrupt_waiting);
 
-  for (int i = 0; i < 4; i++)
+  for (auto& stack : g_dsp.reg_stacks)
   {
-    p.Do(g_dsp.reg_stack[i]);
+    p.Do(stack);
   }
 
   p.Do(g_dsp.step_counter);
@@ -265,7 +265,8 @@ void DSPLLE::DSP_WriteMailBoxHigh(bool cpu_mailbox, u16 value)
   {
     if (gdsp_mbox_peek(MAILBOX_CPU) & 0x80000000)
     {
-      ERROR_LOG(DSPLLE, "Mailbox isn't empty ... strange");
+      // the DSP didn't read the previous value
+      WARN_LOG(DSPLLE, "Mailbox isn't empty ... strange");
     }
 
 #if PROFILE

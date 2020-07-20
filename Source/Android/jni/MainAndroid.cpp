@@ -201,6 +201,8 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_onGamePadMov
     JNIEnv* env, jobject obj, jstring jDevice, jint Axis, jfloat Value);
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetMotionSensorsEnabled(
     JNIEnv* env, jobject obj, jboolean accelerometer_enabled, jboolean gyroscope_enabled);
+JNIEXPORT double JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetInputRadiusAtAngle(
+    JNIEnv* env, jobject obj, int emu_pad_id, int stick, double angle);
 JNIEXPORT jstring JNICALL
 Java_org_dolphinemu_dolphinemu_NativeLibrary_GetVersionString(JNIEnv* env, jobject obj);
 JNIEXPORT jstring JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetGitRevision(JNIEnv* env,
@@ -238,6 +240,8 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetUserDirec
     JNIEnv* env, jobject obj, jstring jDirectory);
 JNIEXPORT jstring JNICALL
 Java_org_dolphinemu_dolphinemu_NativeLibrary_GetUserDirectory(JNIEnv* env, jobject obj);
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetCacheDirectory(
+    JNIEnv* env, jobject obj, jstring jDirectory);
 JNIEXPORT jint JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_DefaultCPUCore(JNIEnv* env,
                                                                                    jobject obj);
 JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetProfiling(JNIEnv* env,
@@ -313,6 +317,13 @@ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetMotionSen
     JNIEnv* env, jobject obj, jboolean accelerometer_enabled, jboolean gyroscope_enabled)
 {
   ciface::Android::SetMotionSensorsEnabled(accelerometer_enabled, gyroscope_enabled);
+}
+
+JNIEXPORT double JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetInputRadiusAtAngle(
+    JNIEnv* env, jobject obj, int emu_pad_id, int stick, double angle)
+{
+  const auto casted_stick = static_cast<ButtonManager::ButtonType>(stick);
+  return ButtonManager::GetInputRadiusAtAngle(emu_pad_id, casted_stick, angle);
 }
 
 JNIEXPORT jstring JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetVersionString(JNIEnv* env,
@@ -523,6 +534,13 @@ JNIEXPORT jstring JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_GetUserDi
                                                                                         jobject obj)
 {
   return ToJString(env, File::GetUserPath(D_USER_IDX).c_str());
+}
+
+JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetCacheDirectory(
+    JNIEnv* env, jobject obj, jstring jDirectory)
+{
+  std::lock_guard<std::mutex> guard(s_host_identity_lock);
+  File::SetUserPath(D_CACHE_IDX, GetJString(env, jDirectory) + DIR_SEP);
 }
 
 JNIEXPORT jint JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_DefaultCPUCore(JNIEnv* env,
@@ -740,6 +758,14 @@ JNIEXPORT jboolean JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_InstallW
 {
   const std::string path = GetJString(env, jFile);
   return static_cast<jboolean>(WiiUtils::InstallWAD(path));
+}
+
+JNIEXPORT jstring JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_FormatSize(JNIEnv* env,
+                                                                                  jobject obj,
+                                                                                  jlong bytes,
+                                                                                  jint decimals)
+{
+  return ToJString(env, UICommon::FormatSize(bytes, decimals));
 }
 
 #ifdef __cplusplus

@@ -136,6 +136,7 @@ void MenuBar::OnEmulationStateChanged(Core::State state)
   m_jit_interpreter_core->setEnabled(running);
   m_jit_block_linking->setEnabled(!running);
   m_jit_disable_cache->setEnabled(!running);
+  m_jit_disable_fastmem->setEnabled(!running);
   m_jit_clear_cache->setEnabled(running);
   m_jit_log_coverage->setEnabled(!running);
   m_jit_search_instruction->setEnabled(running);
@@ -168,6 +169,7 @@ void MenuBar::OnDebugModeToggled(bool enabled)
   // View
   m_show_code->setVisible(enabled);
   m_show_registers->setVisible(enabled);
+  m_show_threads->setVisible(enabled);
   m_show_watch->setVisible(enabled);
   m_show_breakpoints->setVisible(enabled);
   m_show_memory->setVisible(enabled);
@@ -445,6 +447,14 @@ void MenuBar::AddViewMenu()
   connect(&Settings::Instance(), &Settings::RegistersVisibilityChanged, m_show_registers,
           &QAction::setChecked);
 
+  m_show_threads = view_menu->addAction(tr("&Threads"));
+  m_show_threads->setCheckable(true);
+  m_show_threads->setChecked(Settings::Instance().IsThreadsVisible());
+
+  connect(m_show_threads, &QAction::toggled, &Settings::Instance(), &Settings::SetThreadsVisible);
+  connect(&Settings::Instance(), &Settings::ThreadsVisibilityChanged, m_show_threads,
+          &QAction::setChecked);
+
   // i18n: This kind of "watch" is used for watching emulated memory.
   // It's not related to timekeeping devices.
   m_show_watch = view_menu->addAction(tr("&Watch"));
@@ -620,6 +630,9 @@ void MenuBar::AddListColumnsMenu(QMenu* view_menu)
       {tr("Game ID"), &SConfig::GetInstance().m_showIDColumn},
       {tr("Region"), &SConfig::GetInstance().m_showRegionColumn},
       {tr("File Size"), &SConfig::GetInstance().m_showSizeColumn},
+      {tr("File Format"), &SConfig::GetInstance().m_showFileFormatColumn},
+      {tr("Block Size"), &SConfig::GetInstance().m_showBlockSizeColumn},
+      {tr("Compression"), &SConfig::GetInstance().m_showCompressionColumn},
       {tr("Tags"), &SConfig::GetInstance().m_showTagsColumn}};
 
   QActionGroup* column_group = new QActionGroup(this);
@@ -798,6 +811,14 @@ void MenuBar::AddJITMenu()
   m_jit_disable_cache->setChecked(SConfig::GetInstance().bJITNoBlockCache);
   connect(m_jit_disable_cache, &QAction::toggled, [this](bool enabled) {
     SConfig::GetInstance().bJITNoBlockCache = enabled;
+    ClearCache();
+  });
+
+  m_jit_disable_fastmem = m_jit->addAction(tr("Disable Fastmem"));
+  m_jit_disable_fastmem->setCheckable(true);
+  m_jit_disable_fastmem->setChecked(!SConfig::GetInstance().bFastmem);
+  connect(m_jit_disable_fastmem, &QAction::toggled, [this](bool enabled) {
+    SConfig::GetInstance().bFastmem = !enabled;
     ClearCache();
   });
 
